@@ -1,6 +1,10 @@
 import numpy as np
 
 
+def model(func, args):
+    return func(*args)
+
+
 def norm(x, mu, sigma):
     return np.exp(-0.5 * ((x - mu) / sigma) ** 2) / (sigma * np.sqrt(2 * np.pi))
 
@@ -37,12 +41,12 @@ def vr_madani(t, P, v_rmax, delta):
     return - v_rmax / (1 + delta * P) * np.sin(2 * np.pi * t / 16 + np.pi / 2)
 
 
-def v_madani(t, z, P, v1, v_rmax, delta):
+def v_madani(t, z, P, vd_max, vr_max, delta):
     th = t % 24
     if 4 <= th <= 20:  # go down by day
-        return vd_madani(t, z, v1)
+        return vd_madani(t, z, vd_max)
     else:  # go up by night
-        return vr_madani(t, P, v_rmax, delta)
+        return vr_madani(t, P, vr_max, delta)
 
 
 def v_madani2(t, z, P, vd_max, vr_max, delta, gamma=0.05):
@@ -74,11 +78,11 @@ def I_richards(t, z, gamma=0.05):
     return I0_richards(t) * np.exp(- gamma * z)
 
 
-def v_richards(t, z, P, v1, delta):
+def v_richards(t, z, P, vd_max, vr_max, delta):
     if dIdt_richards(t, z) <= 0:
-        return v1 * dIdt_richards(t, z) / (1 + delta * P)
+        return vr_max * dIdt_richards(t, z) / (1 + delta * P)
     else:
-        return v1 * dIdt_richards(t, z)
+        return vd_max * dIdt_richards(t, z)
 
 
 def vc(t, z, P, c):
@@ -91,7 +95,7 @@ def vc(t, z, P, c):
 
 def v_affine(t, z, P, a):
     th = t % 24
-    return -a*th+a*12
+    return -a * th + a * 12
 
 
 def R(t, z, r_max, K_I, light):
@@ -214,6 +218,8 @@ def model_sweby(Z0, P0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, 
     :param light: function of light with arguments t, z, and gamma as optional (fixed)
     :param speed: function for migration speed
     :param args: arguments following t, z, P, for the speed function
+    :param K_I: half-saturation constant for phytoplankton functional response to light
+    :param r_max: maximum phytoplankton growth rate
     :param alpha: maximum feeding rate
     :param beta: handling time for zooplankton feeding on phytoplankton
     :param K: capacitance (nutrients) for phytoplankton logistic growth
@@ -294,7 +300,7 @@ def model_sweby(Z0, P0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, 
                                   t, l + 1])) + dt * e * alpha * P[t, l] * Z[t, l] / (1 + beta * P[t, l]) - dt * mu * Z[
                                   t, l]
 
-        Z[t + 1, 0] = 0
+        Z[t + 1, 0] = Z[t + 1, 2]
         Z[t + 1, imax] = Z[t + 1, imax - 2]
 
     return s, P, Z
@@ -331,6 +337,54 @@ def model_AN(Z0, P0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, 
             t, -1]) + dt * e * alpha * P[t, -1] * Z[t, -1] / (1 + beta * P[t, -1]) - dt * mu * Z[t, -1]
 
     return w, P, Z
+
+
+def model_AN_RC(P0, Z0, E0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, mu, rho, Em):
+    tt, zz = np.shape(Z0)
+    Z = np.copy(Z0)
+    P = np.copy(P0)
+    E = np.copy(E0)
+    D = np.zeros((tt, zz))
+    w = np.zeros((tt, zz))
+    for t in range(tt - 1):
+        # if t * dt == np.int(t * dt):
+        # print(t * dt)
+        for i in range(zz):
+            w[t, i] = speed(t * dt, i * dz, P[t, i], *args)
+            # CFL condition
+            if np.abs(w[t, i]) * dt / dz > 1:
+                print('CFL not satisfied : w*dt/dz=' + str(w[t, i]) + '*' + str(dt) + '/' + str(dz))
+                return None
+
+            P[t + 1, i] = P[t, i] + dt * (
+                    R(t * dt, i * dz, r_max, K_I, light) * P[t, i] * (1 - P[t, i] / K)) - dt * alpha * P[t, i] * Z[
+                              t, i] / (1 + beta * P[t, i])
+            E[t + 1, i] = E[t, i] + dt * e * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i]) - dt * rho * (
+                        E[t, i] - Em)
+            D[t + 1, i] = D[t, i] + dt * (1 - e) * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i]) + dt * mu * Z[t, i]
+
+        for i in range(1, zz - 1):
+            if E[t, i] > 0:
+                Z[t + 1, i] = Z[t, i] + dt / dz * (
+                        (w[t, i - 1] > 0) * w[t, i - 1] * Z[t, i - 1] - np.abs(w[t, i]) * Z[t, i] - 1 * (
+                        w[t, i + 1] < 0) * w[t, i + 1] * Z[t, i + 1]) + dt * rho * Z[t, i] * (
+                                          1 - Em / E[t, i]) - dt * mu * Z[t, i]
+            else:
+                Z[t + 1, i] = 0
+        if E[t, 0] > 0:
+            Z[t + 1, 0] = Z[t, 0] + dt / dz * (
+                        -np.abs(w[t, 0]) * (w[t, 0] > 0) * Z[t, 0] - 1 * (w[t, 1] < 0) * w[t, 1] * Z[t, 1]) + dt * rho * \
+                          Z[t, 0] * (1 - Em / E[t, 0]) - dt * mu * Z[t, 0]
+        else:
+            Z[t + 1, 0] = 0
+        if E[t, -1] > 0:
+            Z[t + 1, -1] = Z[t, -1] + dt / dz * (
+                    (w[t, -2] > 0) * w[t, -2] * Z[t, -2] - np.abs(w[t, -1]) * (w[t, -1] < 0) * Z[t, -1]) + dt * rho * Z[
+                               t, 0] * (1 - Em / E[t, -1]) - dt * mu * Z[t, -1]
+        else:
+            Z[t + 1, -1] = 0
+
+    return w, P, Z, D
 
 
 def leapfrog(Z0, P0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, mu):
@@ -371,7 +425,7 @@ def leapfrog(Z0, P0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, 
         for i in range(1, zz - 1):
             if s[t, i] >= 0:
                 Z[t + 1, i] = Z[t - 1, i] - dt / dz * (
-                            s[t, i + 1] * Z[t, i + 1] - s[t, i - 1] * Z[t, i - 1]) + dt * e * alpha * \
+                        s[t, i + 1] * Z[t, i + 1] - s[t, i - 1] * Z[t, i - 1]) + dt * e * alpha * \
                               Z[t, i] * P[t, i] / (1 + beta * P[t, i]) - dt * mu * Z[t, i]
             else:
                 l = zz - 1 - i
