@@ -1,26 +1,24 @@
 import matplotlib.pyplot as plt
 from model_functions import *
 import datetime
-import os
-import imageio
+
 
 currentDT = datetime.datetime.now()
-start_time = 60 * currentDT.hour + currentDT.minute + currentDT.second/60 # minutes
+start_time = 60 * currentDT.hour + currentDT.minute + currentDT.second / 60  # minutes
 
-
-dz = 10  # depth step (m)
+dz = 4  # depth step (m)
 dt = 0.001  # time step (h)
-Zmax = 300  # m
-Tmax = 24 * 7 # h
+Zmax = 600  # m
+Tmax = 24 * 3  # h
 K = 3
-alpha = 1.74e-5
+alpha = 0.5
 beta = 1
 e = 0.8
-mu = 0.0105
-r_max = 2.32e-7
+mu = 0
+r_max = 1e-6
 K_I = 700
 delta = 10
-vr_max = 30
+vr_max = 72
 vd_max = 72
 
 tt = np.int(Tmax / dt)
@@ -33,14 +31,13 @@ Z0 = np.zeros((tt, zz))
 for i in range(zz):
     Z0[0, i] = norm(i * dz, 50, 10)
 
-#P0 = np.zeros((zz))
-#for i in range(zz):
+# P0 = np.zeros((zz))
+# for i in range(zz):
 #    P0[i] = norm(i * dz, 25, 20)
 
 P0 = np.zeros((tt, zz))
 for i in range(zz):
     P0[0, i] = norm(i * dz, 25, 20)
-
 
 """s, Z = model_AN_migrationonly(Z0, P0, dz, dt, v_madani2, (vd_max, vr_max, delta))
 # print(Z)
@@ -135,40 +132,39 @@ print(np.shape(Zh))
 im = imshow(Zh, cmap=cm.RdBu)  # drawing the function
 colorbar(im)  # adding the colobar on the right"""
 
-
 rho = 1
 Em = 1
 E0 = np.zeros((tt, zz))
 for i in range(zz):
-    E0[0, i] = (Z0[0, i] > 0)*Em
+    E0[0, i] = (Z0[0, i] > 0) * Em
 func = model_AN_RC
-func_name = str(func)
-args = (Z0, P0, E0, dz, dt, I, v_madani2, (vd_max, vr_max, delta), K_I, r_max, alpha, beta, K, e, mu, rho, Em)
+args = (Z0, P0, E0, dz, dt, I, v_madani2_relative, (vd_max, vr_max, delta), K_I, r_max, alpha, beta, K, e, mu, rho, Em)
 s, P, Z, D = model(func, args)
-path_pics = '/Users/jeanneabitbol/PycharmProjects/MIO_internship/'+func_name+'/alpha='+str(alpha)+'/mu='+str(mu)
-os.mkdir(path_pics)
 
 plt.figure()
 plt.title('speed')
 plt.plot(time, s[:, 0], label='z = 0')
 plt.plot(time, s[:, np.int(20 / dz)], label='z = 20')
 plt.plot(time, s[:, np.int(150 / dz)], label='z = 150')
-#plt.plot(time, s[:, np.int(500 / dz)], label='z = 500')
+# plt.plot(time, s[:, np.int(500 / dz)], label='z = 500')
 plt.vlines([0, 4, 12, 20, 24, 28, 36, 44, 48], -5, 5, linestyles='dashed')
 plt.legend()
 
 y_max = np.max([np.max(P), np.max(Z), np.max(D)])
 
+indices = np.arange(np.int(tt * dt * 4))
 plt.figure()
-ax.set_ylim(0, y_max)
-for i in range(np.int(tt * dt * 4)):
+plt.xlim(0, Zmax)
+plt.ylim(0, y_max)
+Zh = []
+for i in indices:
+    Zh.append(Z[np.int(i / (4 * dt))])
     plt.clf()
     plt.title('t = ' + str(i / 4 % 24))
     plt.plot(watercolumn, P[np.int(i / (4 * dt))], label='P')
-    plt.plot(watercolumn, Z[np.int(i / (4 * dt))], label='Z')
+    plt.plot(watercolumn, Zh[-1], label='Z')
     plt.plot(watercolumn, D[np.int(i / (4 * dt))], label='D')
     plt.legend()
-    plt.savefig(path_pics+'t='+str(i/4))
     plt.pause(0.01)
 plt.show()
 
@@ -179,6 +175,7 @@ for t in range(tt):
     Ztot[t] = np.sum(Z[t])
     Ptot[t] = np.sum(P[t])
     Dtot[t] = np.sum(D[t])
+
 plt.figure()
 plt.title('total biomass')
 plt.plot(time, Ztot, label='Z')
@@ -186,30 +183,18 @@ plt.plot(time, Ptot, label='P')
 plt.plot(time, Dtot, label='D')
 plt.legend()
 
+from pylab import meshgrid, cm, imshow, colorbar
 
-path = path_pics  # on Mac: right click on a folder, hold down option, and click "copy as pathname"
-
-image_folder = os.fsencode(path)
-
-filenames = []
-
-for file in os.listdir(image_folder):
-    filename = os.fsdecode(file)
-    if filename.endswith( ('.jpeg', '.png', '.gif') ):
-        filenames.append(filename)
-
-filenames.sort() # this iteration technique has no built in order, so sort the frames
-
-images = list(map(lambda filename: imageio.imread(filename), filenames))
-
-imageio.mimsave(os.path.join('movie.gif'), images, duration = 0.04) # modify duration as needed
-
-
-
-currentDT = datetime.datetime.now()
-final_time = 60 * currentDT.hour + currentDT.minute + currentDT.second/60
-running_time = final_time - start_time
-print('The execution took '+str(running_time)+' minutes.')
+plt.figure()
+x = np.copy(indices)
+y = np.arange(0, Zmax, dz)
+X, Y = meshgrid(x, y)  # grid of point
+im = imshow(Zh, cmap=cm.RdBu)  # drawing the function
+colorbar(im)  # adding the colobar on the right
 
 plt.show()
 
+currentDT = datetime.datetime.now()
+final_time = 60 * currentDT.hour + currentDT.minute + currentDT.second / 60  # minutes
+running_time = final_time - start_time
+print('The execution took '+str(running_time)+' minutes.quit')

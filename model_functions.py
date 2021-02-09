@@ -41,7 +41,7 @@ def vr_madani(t, P, v_rmax, delta):
     return - v_rmax / (1 + delta * P) * np.sin(2 * np.pi * t / 16 + np.pi / 2)
 
 
-def v_madani(t, z, P, vd_max, vr_max, delta):
+def v_madani(t, z, P, vd_max, vr_max, delta): #c'est nimp, période de 48h
     th = t % 24
     if 4 <= th <= 20:  # go down by day
         return vd_madani(t, z, vd_max)
@@ -63,15 +63,18 @@ def v_madani2(t, z, P, vd_max, vr_max, delta, gamma=0.05):
             return -vr_max / (1 + delta * P) * np.sin(2 * np.pi * th / 16 + np.pi / 2)
 
 
-def I0_richards(t, Is=1e-6, eps=1e-3):
+def v_madani2_relative(t, z, P, vd_max, vr_max, delta):
+    return v_madani2(t, z, P, vd_max, vr_max, delta)/(1+I(t, z)/750)
+
+
+def I0_richards(t, Is=1e-6, eps=1e-4):
     return Is + (1 - Is) / 2 * (
             1 + np.sin(np.pi / 12 * (t - 6)) + np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2) - np.sqrt(eps + 1))
 
 
-def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-3):
+def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-4):
     return np.exp(-gamma * z) * (0.5 * (1 - Is) * (
-            np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) + (np.pi / 12 * np.cos(np.pi / 12 * (t - 6))) / np.sqrt(
-        eps + np.sin(np.pi / 12 * (t - 6)) ** 2)))
+            np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1/np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2))))
 
 
 def I_richards(t, z, gamma=0.05):
@@ -83,6 +86,38 @@ def v_richards(t, z, P, vd_max, vr_max, delta):
         return vr_max * dIdt_richards(t, z) / (1 + delta * P)
     else:
         return vd_max * dIdt_richards(t, z)
+
+
+def v_richards_relative(t, z, P, vd_max, vr_max, delta, dt=0.001):
+    if dIdt_richards(t, z) >= 0:
+        return vd_max/dt*(I_richards(t+dt, z)/I_richards(t, z)-1)
+    else:
+        return vr_max/dt*(I_richards(t+dt, z)/I_richards(t, z)-1)/(1+delta*P)
+
+
+def v_richards_relative_brut(t, z, P, vd_max, vr_max, delta):
+    return v_richards(t, z, P, vd_max, vr_max, delta)/I_richards(t, z)
+
+
+def v_richardsII(t, z, P, vd_max, vr_max, delta, Zmax, gamma=0.05, b=10): #nimp
+    w = 1/(gamma*I_richards(t, z))*dIdt_richards(t, z)
+    if (w > vd_max):
+        h = vd_max
+    elif (w < -vr_max):
+        h = vr_max
+    else:
+        h = w
+    if 0 <= z <= Zmax - b:
+        gd = 1
+    else:
+        gd = np.cos(np.pi/(2*b)*(z-Zmax/b))
+    if b <= z <= Zmax:
+        gu = 1
+    else:
+        gu = np.sin(np.pi/(2*b)*z)
+    g = (0 <= t%24 < 12)*gd/(1+delta*P) + (12 <= t%24 < 24)*gu
+    W = h*g
+    return W
 
 
 def vc(t, z, P, c):
@@ -321,9 +356,7 @@ def model_AN(Z0, P0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, 
                 print('CFL not satisfied : w*dt/dz=' + str(w[t, i]) + '*' + str(dt) + '/' + str(dz))
                 return None
 
-            P[t + 1, i] = P[t, i] + dt * (
-                    R(t * dt, i * dz, r_max, K_I, light) * P[t, i] * (1 - P[t, i] / K)) - dt * alpha * P[t, i] * Z[
-                              t, i] / (1 + beta * P[t, i])
+            P[t + 1, i] = P[t, i] + dt * (R(t * dt, i * dz, r_max, K_I, light) * P[t, i] * (1 - P[t, i] / K)) - dt * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i])
 
         for i in range(1, zz - 1):
             Z[t + 1, i] = Z[t, i] + dt / dz * (
@@ -356,9 +389,7 @@ def model_AN_RC(P0, Z0, E0, dz, dt, light, speed, args, K_I, r_max, alpha, beta,
                 print('CFL not satisfied : w*dt/dz=' + str(w[t, i]) + '*' + str(dt) + '/' + str(dz))
                 return None
 
-            P[t + 1, i] = P[t, i] + dt * (
-                    R(t * dt, i * dz, r_max, K_I, light) * P[t, i] * (1 - P[t, i] / K)) - dt * alpha * P[t, i] * Z[
-                              t, i] / (1 + beta * P[t, i])
+            P[t + 1, i] = P[t, i] + dt * (R(t * dt, i * dz, r_max, K_I, light) * P[t, i] * (1 - P[t, i] / K)) - dt * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i])
             E[t + 1, i] = E[t, i] + dt * e * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i]) - dt * rho * (
                         E[t, i] - Em)
             D[t + 1, i] = D[t, i] + dt * (1 - e) * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i]) + dt * mu * Z[t, i]
