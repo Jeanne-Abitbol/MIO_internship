@@ -41,7 +41,7 @@ def vr_madani(t, P, v_rmax, delta):
     return - v_rmax / (1 + delta * P) * np.sin(2 * np.pi * t / 16 + np.pi / 2)
 
 
-def v_madani(t, z, P, vd_max, vr_max, delta): #c'est nimp, période de 48h
+def v_madani(t, z, P, vd_max, vr_max, delta):  # c'est nimp, période de 48h
     th = t % 24
     if 4 <= th <= 20:  # go down by day
         return vd_madani(t, z, vd_max)
@@ -64,7 +64,7 @@ def v_madani2(t, z, P, vd_max, vr_max, delta, gamma=0.05):
 
 
 def v_madani2_relative(t, z, P, vd_max, vr_max, delta):
-    return v_madani2(t, z, P, vd_max, vr_max, delta)/(1+I(t, z)/750)
+    return v_madani2(t, z, P, vd_max, vr_max, delta) / (1 + I(t, z) / 750)
 
 
 def I0_richards(t, Is=1e-6, eps=1e-4):
@@ -74,7 +74,7 @@ def I0_richards(t, Is=1e-6, eps=1e-4):
 
 def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-4):
     return np.exp(-gamma * z) * (0.5 * (1 - Is) * (
-            np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1/np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2))))
+            np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1 / np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2))))
 
 
 def I_richards(t, z, gamma=0.05):
@@ -88,19 +88,19 @@ def v_richards(t, z, P, vd_max, vr_max, delta):
         return vd_max * dIdt_richards(t, z)
 
 
-def v_richards_relative(t, z, P, vd_max, vr_max, delta, dt=0.001):
+def v_richards_relative(t, z, P, vd_max, vr_max, delta, dt):
     if dIdt_richards(t, z) >= 0:
-        return vd_max/dt*(I_richards(t+dt, z)/I_richards(t, z)-1)
+        return vd_max / dt * (I_richards(t + dt, z) / I_richards(t, z) - 1)
     else:
-        return vr_max/dt*(I_richards(t+dt, z)/I_richards(t, z)-1)/(1+delta*P)
+        return vr_max / dt * (I_richards(t + dt, z) / I_richards(t, z) - 1) / (1 + delta * P)
 
 
 def v_richards_relative_brut(t, z, P, vd_max, vr_max, delta):
-    return v_richards(t, z, P, vd_max, vr_max, delta)/I_richards(t, z)
+    return v_richards(t, z, P, vd_max, vr_max, delta) / I_richards(t, z)
 
 
-def v_richardsII(t, z, P, vd_max, vr_max, delta, Zmax, gamma=0.05, b=10): #nimp
-    w = 1/(gamma*I_richards(t, z))*dIdt_richards(t, z)
+def v_richardsII(t, z, P, vd_max, vr_max, delta, Zmax, gamma=0.05, b=10):  # nimp
+    w = 1 / (gamma * I_richards(t, z)) * dIdt_richards(t, z)
     if (w > vd_max):
         h = vd_max
     elif (w < -vr_max):
@@ -110,13 +110,13 @@ def v_richardsII(t, z, P, vd_max, vr_max, delta, Zmax, gamma=0.05, b=10): #nimp
     if 0 <= z <= Zmax - b:
         gd = 1
     else:
-        gd = np.cos(np.pi/(2*b)*(z-Zmax/b))
+        gd = np.cos(np.pi / (2 * b) * (z - Zmax / b))
     if b <= z <= Zmax:
         gu = 1
     else:
-        gu = np.sin(np.pi/(2*b)*z)
-    g = (0 <= t%24 < 12)*gd/(1+delta*P) + (12 <= t%24 < 24)*gu
-    W = h*g
+        gu = np.sin(np.pi / (2 * b) * z)
+    g = (0 <= t % 24 < 12) * gd / (1 + delta * P) + (12 <= t % 24 < 24) * gu
+    W = h * g
     return W
 
 
@@ -131,6 +131,16 @@ def vc(t, z, P, c):
 def v_affine(t, z, P, a):
     th = t % 24
     return -a * th + a * 12
+
+
+def v(t, z, P):
+    th = t % 24
+    if 4.5 <= th <= 6.5:
+        return 72
+    elif 16.5 <= th <= 18.5:
+        return -72
+    else:
+        return 0
 
 
 def R(t, z, r_max, K_I, light):
@@ -356,7 +366,9 @@ def model_AN(Z0, P0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, 
                 print('CFL not satisfied : w*dt/dz=' + str(w[t, i]) + '*' + str(dt) + '/' + str(dz))
                 return None
 
-            P[t + 1, i] = P[t, i] + dt * (R(t * dt, i * dz, r_max, K_I, light) * P[t, i] * (1 - P[t, i] / K)) - dt * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i])
+            P[t + 1, i] = P[t, i] + dt * (
+                        R(t * dt, i * dz, r_max, K_I, light) * P[t, i] * (1 - P[t, i] / K)) - dt * alpha * P[t, i] * Z[
+                              t, i] / (1 + beta * P[t, i])
 
         for i in range(1, zz - 1):
             Z[t + 1, i] = Z[t, i] + dt / dz * (
@@ -389,22 +401,26 @@ def model_AN_RC(P0, Z0, E0, dz, dt, light, speed, args, K_I, r_max, alpha, beta,
                 print('CFL not satisfied : w*dt/dz=' + str(w[t, i]) + '*' + str(dt) + '/' + str(dz))
                 return None
 
-            P[t + 1, i] = P[t, i] + dt * (R(t * dt, i * dz, r_max, K_I, light) * P[t, i] * (1 - P[t, i] / K)) - dt * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i])
-            E[t + 1, i] = E[t, i] + dt * e * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i]) - dt * rho * (
-                        E[t, i] - Em)
+            P[t + 1, i] = P[t, i] + dt * (
+                        R(t * dt, i * dz, r_max, K_I, light) * P[t, i] * (1 - P[t, i] / K)) - dt * alpha * P[t, i] * Z[
+                              t, i] / (1 + beta * P[t, i])
             D[t + 1, i] = D[t, i] + dt * (1 - e) * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i]) + dt * mu * Z[t, i]
 
         for i in range(1, zz - 1):
+            E[t + 1, i] = E[t, i] + dt / dz * (
+                        (w[t, i - 1] > 0) * w[t, i - 1] * E[t, i - 1] - np.abs(w[t, i]) * E[t, i] - 1 * (
+                        w[t, i + 1] < 0) * w[t, i + 1] * E[t, i + 1]) + dt * e * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i]) - dt * rho * (
+                    E[t, i] - Em)
             if E[t, i] > 0:
                 Z[t + 1, i] = Z[t, i] + dt / dz * (
                         (w[t, i - 1] > 0) * w[t, i - 1] * Z[t, i - 1] - np.abs(w[t, i]) * Z[t, i] - 1 * (
                         w[t, i + 1] < 0) * w[t, i + 1] * Z[t, i + 1]) + dt * rho * Z[t, i] * (
-                                          1 - Em / E[t, i]) - dt * mu * Z[t, i]
+                                      1 - Em / E[t, i]) - dt * mu * Z[t, i]
             else:
                 Z[t + 1, i] = 0
         if E[t, 0] > 0:
             Z[t + 1, 0] = Z[t, 0] + dt / dz * (
-                        -np.abs(w[t, 0]) * (w[t, 0] > 0) * Z[t, 0] - 1 * (w[t, 1] < 0) * w[t, 1] * Z[t, 1]) + dt * rho * \
+                    -np.abs(w[t, 0]) * (w[t, 0] > 0) * Z[t, 0] - 1 * (w[t, 1] < 0) * w[t, 1] * Z[t, 1]) + dt * rho * \
                           Z[t, 0] * (1 - Em / E[t, 0]) - dt * mu * Z[t, 0]
         else:
             Z[t + 1, 0] = 0
@@ -414,6 +430,48 @@ def model_AN_RC(P0, Z0, E0, dz, dt, light, speed, args, K_I, r_max, alpha, beta,
                                t, 0] * (1 - Em / E[t, -1]) - dt * mu * Z[t, -1]
         else:
             Z[t + 1, -1] = 0
+        E[t + 1, 0] = E[t, 0] + dt / dz * (
+                -np.abs(w[t, 0]) * (w[t, 0] > 0) * E[t, 0] - 1 * (w[t, 1] < 0) * E[t, 1] * Z[t, 1]) + dt * e * alpha * P[t, 0] * Z[t, 0] / (1 + beta * P[t, 0]) - dt * rho * (
+                    E[t, 0] - Em)
+        E[t + 1, -1] = E[t, -1] + dt / dz * (
+                (w[t, -2] > 0) * w[t, -2] * E[t, -2] - np.abs(w[t, -1]) * (w[t, -1] < 0) * E[t, -1]) + dt * e * alpha * P[t, -1] * Z[t, -1] / (1 + beta * P[t, -1]) - dt * rho * (
+                    E[t, -1] - Em)
+
+    return w, P, Z, D
+
+
+def model_AN_RC_withoutE(P0, Z0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, mu):
+    tt, zz = np.shape(Z0)
+    Z = np.copy(Z0)
+    P = np.copy(P0)
+    D = np.zeros((tt, zz))
+    w = np.zeros((tt, zz))
+    for t in range(tt - 1):
+        # if t * dt == np.int(t * dt):
+        # print(t * dt)
+        for i in range(zz):
+            w[t, i] = speed(t * dt, i * dz, P[t, i], *args)
+            # CFL condition
+            if np.abs(w[t, i]) * dt / dz > 1:
+                print('CFL not satisfied : w*dt/dz=' + str(w[t, i]) + '*' + str(dt) + '/' + str(dz))
+                return None
+
+            P[t + 1, i] = P[t, i] + dt * (
+                        R(t * dt, i * dz, r_max, K_I, light) * P[t, i] * (1 - P[t, i] / K)) - dt * alpha * P[t, i] * Z[
+                              t, i] / (1 + beta * P[t, i])
+            D[t + 1, i] = D[t, i] + dt * (1 - e) * alpha * P[t, i] * Z[t, i] / (1 + beta * P[t, i]) + dt * mu * Z[t, i]
+
+        for i in range(1, zz - 1):
+            Z[t + 1, i] = Z[t, i] + dt / dz * (
+                    (w[t, i - 1] > 0) * w[t, i - 1] * Z[t, i - 1] - np.abs(w[t, i]) * Z[t, i] - 1 * (
+                    w[t, i + 1] < 0) * w[t, i + 1] * Z[t, i + 1]) + dt * e * alpha * P[t, i] * Z[t, i] / (
+                                      1 + beta * P[t, i]) - dt * mu * Z[t, i]
+        Z[t + 1, 0] = Z[t, 0] + dt / dz * (
+                -np.abs(w[t, 0]) * (w[t, 0] > 0) * Z[t, 0] - 1 * (w[t, 1] < 0) * w[t, 1] * Z[t, 1]) + dt * e * alpha * \
+                      P[t, 0] * Z[t, 0] / (1 + beta * P[t, 0]) - dt * mu * Z[t, 0]
+        Z[t + 1, -1] = Z[t, -1] + dt / dz * (
+                (w[t, -2] > 0) * w[t, -2] * Z[t, -2] - np.abs(w[t, -1]) * (w[t, -1] < 0) * Z[t, -1]) + dt * e * alpha * \
+                       P[t, -1] * Z[t, -1] / (1 + beta * P[t, -1]) - dt * mu * Z[t, -1]
 
     return w, P, Z, D
 

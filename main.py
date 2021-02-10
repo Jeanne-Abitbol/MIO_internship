@@ -8,18 +8,18 @@ start_time = 60 * currentDT.hour + currentDT.minute + currentDT.second / 60  # m
 
 dz = 4  # depth step (m)
 dt = 0.001  # time step (h)
-Zmax = 600  # m
+Zmax = 300  # m
 Tmax = 24 * 3  # h
 K = 3
-alpha = 0.5
+alpha = 0.8
 beta = 1
 e = 0.8
-mu = 0
-r_max = 1e-6
+mu = 0.0105
+r_max = 1
 K_I = 700
 delta = 10
-vr_max = 72
-vd_max = 72
+vr_max = 7.2
+vd_max = 7.2
 
 tt = np.int(Tmax / dt)
 zz = np.int(Zmax / dz)
@@ -132,13 +132,13 @@ print(np.shape(Zh))
 im = imshow(Zh, cmap=cm.RdBu)  # drawing the function
 colorbar(im)  # adding the colobar on the right"""
 
-rho = 1
+rho = 10
 Em = 1
 E0 = np.zeros((tt, zz))
 for i in range(zz):
     E0[0, i] = (Z0[0, i] > 0) * Em
-func = model_AN_RC
-args = (Z0, P0, E0, dz, dt, I, v_madani2_relative, (vd_max, vr_max, delta), K_I, r_max, alpha, beta, K, e, mu, rho, Em)
+func = model_AN_RC_withoutE
+args = (Z0, P0, dz, dt, I_richards, v, (), K_I, r_max, alpha, beta, K, e, mu)
 s, P, Z, D = model(func, args)
 
 plt.figure()
@@ -197,4 +197,4 @@ plt.show()
 currentDT = datetime.datetime.now()
 final_time = 60 * currentDT.hour + currentDT.minute + currentDT.second / 60  # minutes
 running_time = final_time - start_time
-print('The execution took '+str(running_time)+' minutes.quit')
+print('The execution took '+str(running_time)+' minutes.')

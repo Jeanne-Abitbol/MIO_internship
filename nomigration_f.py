@@ -1,12 +1,20 @@
 from model_functions import *
 
 
-def PZ_nomigration(Y, t, z, alpha, beta, K, e, mu, r_max, K_I):
+def PZ_nomigration(Y, t, z, light, K_I, r_max, alpha, beta, K, e, mu):
     P = Y[0]
     Z = Y[1]
-    dP = R(t, z, r_max, K_I, I_richards) * P * (1 - P / K) - alpha * P * Z / (1 + beta * P)
+    dP = R(t, z, r_max, K_I, light) * P * (1 - P / K) - alpha * P * Z / (1 + beta * P)
     dZ = Z * (e * alpha * P / (1 + beta * P) - mu)
     return dP, dZ
+
+def PZ_nomigration_withD(Y, t, z, light, K_I, r_max, alpha, beta, K, e, mu):
+    P = Y[0]
+    Z = Y[1]
+    dP = R(t, z, r_max, K_I, light) * P * (1 - P / K) - alpha * P * Z / (1 + beta * P)
+    dZ = Z * (e * alpha * P / (1 + beta * P) - mu)
+    dD = (1-e) * alpha * P * Z / (1 + beta * P) + mu*Z
+    return dP, dZ, dD
 
 
 # variables P (phytoplankton), Z (zooplankton), N (micronekton), D(detritus)
@@ -49,3 +57,27 @@ def PZNDdroop(Y, t, z, K, e, r_max, K_I, light, alpha_PZ, alpha_PN, alpha_ZN, be
     dD = (1 - e) * (alpha_PZ * P * Z / (1 + beta_PZ * P) + alpha_PN * P * N / (1 + beta_PN * P) + alpha_ZN * Z * N / (
                 1 + beta_ZN * Z)) + m_P * P + m_Z * Z + m_N * N
     return dP, dEZ, dZ, dEN, dN, dD
+
+def RC_droop(Y, t, z, light, K_I, r_max, alpha, beta, K, e, mu, rho, Em):
+    RP = Y[0]
+    E = Y[1]
+    C = Y[2]
+    dRP = R(t, z, r_max, K_I, light)*RP*(1-RP/K)-alpha*RP*C/(1+beta*RP)
+    dE = e*alpha*RP*C/(1+beta*RP) - rho*(E-Em)
+    dC = rho*C*(1-Em/E) - mu*C
+    return dRP, dE, dC
+
+
+def RC_droop_withD(Y, t, z, light, K_I, r_max, alpha, beta, K, e, mu, rho, Em):
+    RP = Y[0] # ressource primaire
+    E = Y[1] # réserve d'énergie
+    C = Y[2] # consommateur # detritus
+    dRP = R(t, z, r_max, K_I, light)*RP*(1-RP/K)-alpha*RP*C/(1+beta*RP)
+    dE = e*alpha*RP*C/(1+beta*RP) - rho*(E-Em)
+    dC = rho*C*(1-Em/E) - mu*C
+    dD = (1-e)*alpha*RP*C/(1+beta*RP)+mu*C
+    return dRP, dE, dC, dD
+
+def phyto(Y, t, z, light, K_I, r_max, K):
+    return R(t, z, r_max, K_I, light) * Y * (1 - Y / K)
+
