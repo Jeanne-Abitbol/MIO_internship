@@ -6,20 +6,22 @@ import datetime
 currentDT = datetime.datetime.now()
 start_time = 60 * currentDT.hour + currentDT.minute + currentDT.second / 60  # minutes
 
-dz = 4  # depth step (m)
+dz = 10  # depth step (m)
 dt = 0.001  # time step (h)
-Zmax = 300  # m
-Tmax = 24 * 3  # h
+Zmax = 400  # m
+Tmax = 24 * 15  # h
 K = 3
-alpha = 0.8
+alpha = 0.01
 beta = 1
 e = 0.8
-mu = 0.0105
-r_max = 1
-K_I = 700
+mu = 1e-3
+r_max = 0.5
+K_I = 0.5
 delta = 10
-vr_max = 7.2
-vd_max = 7.2
+vr_max = 63
+vd_max = 72
+rho = 0.01
+Em = 1
 
 tt = np.int(Tmax / dt)
 zz = np.int(Zmax / dz)
@@ -132,8 +134,7 @@ print(np.shape(Zh))
 im = imshow(Zh, cmap=cm.RdBu)  # drawing the function
 colorbar(im)  # adding the colobar on the right"""
 
-rho = 10
-Em = 1
+
 E0 = np.zeros((tt, zz))
 for i in range(zz):
     E0[0, i] = (Z0[0, i] > 0) * Em
@@ -189,8 +190,21 @@ plt.figure()
 x = np.copy(indices)
 y = np.arange(0, Zmax, dz)
 X, Y = meshgrid(x, y)  # grid of point
-im = imshow(Zh, cmap=cm.RdBu)  # drawing the function
+im = imshow(Zh, cmap=cm.RdBu, aspect='auto')  # drawing the function
 colorbar(im)  # adding the colobar on the right
+
+maxZ = np.zeros((tt))
+for t in range(tt):
+    maxZ[t] = np.argmax(Z[t, :])*dz
+
+days = np.arange(14)
+days *= 24
+
+plt.figure()
+plt.title('maxZ')
+plt.plot(time, maxZ)
+plt.vlines(days, 0, np.max(maxZ), linestyles='dashed')
+plt.show()
 
 plt.show()
 

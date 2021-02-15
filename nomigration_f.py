@@ -71,7 +71,7 @@ def RC_droop(Y, t, z, light, K_I, r_max, alpha, beta, K, e, mu, rho, Em):
 def RC_droop_withD(Y, t, z, light, K_I, r_max, alpha, beta, K, e, mu, rho, Em):
     RP = Y[0] # ressource primaire
     E = Y[1] # réserve d'énergie
-    C = Y[2] # consommateur # detritus
+    C = Y[2] # consommateur
     dRP = R(t, z, r_max, K_I, light)*RP*(1-RP/K)-alpha*RP*C/(1+beta*RP)
     dE = e*alpha*RP*C/(1+beta*RP) - rho*(E-Em)
     dC = rho*C*(1-Em/E) - mu*C

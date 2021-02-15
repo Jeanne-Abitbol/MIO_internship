@@ -67,17 +67,17 @@ def v_madani2_relative(t, z, P, vd_max, vr_max, delta):
     return v_madani2(t, z, P, vd_max, vr_max, delta) / (1 + I(t, z) / 750)
 
 
-def I0_richards(t, Is=1e-6, eps=1e-4):
+def I0_richards(t, Is=1e-6, eps=1e-3):
     return Is + (1 - Is) / 2 * (
             1 + np.sin(np.pi / 12 * (t - 6)) + np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2) - np.sqrt(eps + 1))
 
 
-def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-4):
+def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-3):
     return np.exp(-gamma * z) * (0.5 * (1 - Is) * (
             np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1 / np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2))))
 
 
-def I_richards(t, z, gamma=0.05):
+def I_richards(t, z, gamma=0.01):
     return I0_richards(t) * np.exp(- gamma * z)
 
 
@@ -96,7 +96,7 @@ def v_richards_relative(t, z, P, vd_max, vr_max, delta, dt):
 
 
 def v_richards_relative_brut(t, z, P, vd_max, vr_max, delta):
-    return v_richards(t, z, P, vd_max, vr_max, delta) / I_richards(t, z)
+    return v_richards(t, z, P, vd_max, vr_max, delta) / (1e3*I_richards(t, z))
 
 
 def v_richardsII(t, z, P, vd_max, vr_max, delta, Zmax, gamma=0.05, b=10):  # nimp

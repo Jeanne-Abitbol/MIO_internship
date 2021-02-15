@@ -5,7 +5,7 @@ from nomigration_f import *
 K = 3
 e = 0.8
 r_max = 0.5
-rho = 0.1
+rho = 0.01
 K_I = 700
 alpha = 0.01
 beta = 1
@@ -148,7 +148,6 @@ for i in range (len(RHO)):
     plt.savefig('droop_nomigration_rho'+str(i)+'.png', format='png')"""
 
 
-
 """yap = spi.odeint(RC_droop, Y0, time, args=(z, I, K_I, r_max, alpha, beta, K, e, mu, rho, Em))
 plt.figure()
 plt.title('Droop with no migration')
@@ -192,13 +191,13 @@ for i in range(len(ALPHA)):
 
 
 Y0 = [1, 0.5]
-PZ = spi.odeint(PZ_nomigration, Y0, time, args=(z, I, K_I, r_max, alpha, beta, K, e, mu))
+PZ = spi.odeint(PZ_nomigration, Y0, time, args=(z, I_richards, K_I, r_max, alpha, beta, K, e, mu))
 Y0 = [1, 0.5*Em, 0.5]
-PEZ = spi.odeint(RC_droop, Y0, time, args=(z, I, K_I, r_max, alpha, beta, K, e, mu, rho, Em))
+PEZ = spi.odeint(RC_droop, Y0, time, args=(z, I_richards, K_I, r_max, alpha, beta, K, e, mu, rho, Em))
 Y0 = [1, 0.5, 0]
-PZD = spi.odeint(PZ_nomigration_withD, Y0, time, args=(z, I, K_I, r_max, alpha, beta, K, e, mu))
+PZD = spi.odeint(PZ_nomigration_withD, Y0, time, args=(z, I_richards, K_I, r_max, alpha, beta, K, e, mu))
 Y0 = [1, 0.5*Em, 0.5, 0]
-PEZD = spi.odeint(RC_droop_withD, Y0, time, args=(z, I, K_I, r_max, alpha, beta, K, e, mu, rho, Em))
+PEZD = spi.odeint(RC_droop_withD, Y0, time, args=(z, I_richards, K_I, r_max, alpha, beta, K, e, mu, rho, Em))
 
 plt.figure()
 plt.title('PZ')
