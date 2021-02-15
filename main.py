@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
-from model_functions import *
+from speeds_f import *
 import datetime
+
 
 
 currentDT = datetime.datetime.now()
@@ -204,7 +205,6 @@ plt.figure()
 plt.title('maxZ')
 plt.plot(time, maxZ)
 plt.vlines(days, 0, np.max(maxZ), linestyles='dashed')
-plt.show()
 
 plt.show()
 

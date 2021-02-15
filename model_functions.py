@@ -33,114 +33,18 @@ def I(t, z, gamma=0.05):
     return I0(t) * np.exp(-gamma * z)
 
 
-def vd_madani(t, z, v1, gamma=0.05):
-    return v1 * np.exp(-gamma * z) * np.pi / 8 * np.cos(2 * np.pi * t / 16 - np.pi)  # vd = v1*dI/dt
-
-
-def vr_madani(t, P, v_rmax, delta):
-    return - v_rmax / (1 + delta * P) * np.sin(2 * np.pi * t / 16 + np.pi / 2)
-
-
-def v_madani(t, z, P, vd_max, vr_max, delta):  # c'est nimp, période de 48h
-    th = t % 24
-    if 4 <= th <= 20:  # go down by day
-        return vd_madani(t, z, vd_max)
-    else:  # go up by night
-        return vr_madani(t, P, vr_max, delta)
-
-
-def v_madani2(t, z, P, vd_max, vr_max, delta, gamma=0.05):
-    th = t % 24
-    if th <= 12:
-        if I(t, z) == 0:
-            return 0
-        else:
-            return vd_max * np.exp(- gamma * z) * th / 8 * np.cos(np.pi * th / 8 - np.pi)
-    else:
-        if I(t, z) == 0:
-            return 0
-        else:
-            return -vr_max / (1 + delta * P) * np.sin(2 * np.pi * th / 16 + np.pi / 2)
-
-
-def v_madani2_relative(t, z, P, vd_max, vr_max, delta):
-    return v_madani2(t, z, P, vd_max, vr_max, delta) / (1 + I(t, z) / 750)
-
-
-def I0_richards(t, Is=1e-6, eps=1e-3):
+def I0_richards(t, Is=1e-6, eps=1e-4):
     return Is + (1 - Is) / 2 * (
             1 + np.sin(np.pi / 12 * (t - 6)) + np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2) - np.sqrt(eps + 1))
 
 
-def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-3):
+def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-4):
     return np.exp(-gamma * z) * (0.5 * (1 - Is) * (
             np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1 / np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2))))
 
 
-def I_richards(t, z, gamma=0.01):
+def I_richards(t, z, gamma=0.05):
     return I0_richards(t) * np.exp(- gamma * z)
-
-
-def v_richards(t, z, P, vd_max, vr_max, delta):
-    if dIdt_richards(t, z) <= 0:
-        return vr_max * dIdt_richards(t, z) / (1 + delta * P)
-    else:
-        return vd_max * dIdt_richards(t, z)
-
-
-def v_richards_relative(t, z, P, vd_max, vr_max, delta, dt):
-    if dIdt_richards(t, z) >= 0:
-        return vd_max / dt * (I_richards(t + dt, z) / I_richards(t, z) - 1)
-    else:
-        return vr_max / dt * (I_richards(t + dt, z) / I_richards(t, z) - 1) / (1 + delta * P)
-
-
-def v_richards_relative_brut(t, z, P, vd_max, vr_max, delta):
-    return v_richards(t, z, P, vd_max, vr_max, delta) / (1e3*I_richards(t, z))
-
-
-def v_richardsII(t, z, P, vd_max, vr_max, delta, Zmax, gamma=0.05, b=10):  # nimp
-    w = 1 / (gamma * I_richards(t, z)) * dIdt_richards(t, z)
-    if (w > vd_max):
-        h = vd_max
-    elif (w < -vr_max):
-        h = vr_max
-    else:
-        h = w
-    if 0 <= z <= Zmax - b:
-        gd = 1
-    else:
-        gd = np.cos(np.pi / (2 * b) * (z - Zmax / b))
-    if b <= z <= Zmax:
-        gu = 1
-    else:
-        gu = np.sin(np.pi / (2 * b) * z)
-    g = (0 <= t % 24 < 12) * gd / (1 + delta * P) + (12 <= t % 24 < 24) * gu
-    W = h * g
-    return W
-
-
-def vc(t, z, P, c):
-    th = t % 24
-    if th <= 12:
-        return c
-    else:
-        return -c
-
-
-def v_affine(t, z, P, a):
-    th = t % 24
-    return -a * th + a * 12
-
-
-def v(t, z, P):
-    th = t % 24
-    if 4.5 <= th <= 6.5:
-        return 72
-    elif 16.5 <= th <= 18.5:
-        return -72
-    else:
-        return 0
 
 
 def R(t, z, r_max, K_I, light):
@@ -165,7 +69,7 @@ def model_AN_migrationonly(Z0, P0, dz, dt, speed, args):
                     (w[t, i - 1] > 0) * w[t, i - 1] * Z[t, i - 1] - np.abs(w[t, i]) * Z[t, i] - 1 * (
                     w[t, i + 1] < 0) * w[t, i + 1] * Z[t, i + 1])
         Z[t + 1, 0] = Z[t, 0] + dt / dz * (
-                -np.abs(w[t, 0]) * (w[t, 0] > 0) * Z[t, 0] - 1 * (w[t, 1] < 0) * w[t, 1] * Z[t, 1])
+                -w[t, 0] * (w[t, 0] > 0) * Z[t, 0] - 1 * (w[t, 1] < 0) * w[t, 1] * Z[t, 1])
         Z[t + 1, -1] = Z[t, -1] + dt / dz * (
                 (w[t, -2] > 0) * w[t, -2] * Z[t, -2] - np.abs(w[t, -1]) * (w[t, -1] < 0) * Z[t, -1])
     return w, Z
@@ -191,13 +95,16 @@ def model_sweby_migrationonly(Z0, P0, dz, dt, speed, args):
     s = np.zeros((tt, zz))
 
     for t in range(tt - 1):
-        # print('t'+str(t))
         nu = np.zeros(zz)
         r = np.zeros(zz)
         nu[0] = 1
         th = (t * dt) % 24
+        if th == np.int(th):
+            print(th)
 
         for i in range(zz):
+
+            # computation of the migration speed
             s[t, i] = speed(t * dt, i * dz, P[i], *args)
 
             # CFL condition
@@ -207,14 +114,14 @@ def model_sweby_migrationonly(Z0, P0, dz, dt, speed, args):
 
         for i in range(1, zz - 1):
 
-            # la descente
+            # the descent
             if s[t, i] >= 0:
                 if Z[t, i + 1] - Z[t, i] != 0:
                     nu[i] = 1 - dt / dz * (s[t, i + 1] * Z[t, i + 1] - s[t, i] * Z[t, i]) / (Z[t, i + 1] - Z[t, i])
                 else:
                     nu[i] = 1 - dt / dz * (s[t, i + 1] - s[t, i])
-                if th <= 4 or th >= 20:
-                    r[i] = 0  # night
+                if (nu[i] * (s[t, i + 1] * Z[t, i + 1] - s[t, i] * Z[t, i])) == 0:
+                    r[i] = 1
                 else:
                     r[i] = (nu[i - 1] * (s[t, i] * Z[t, i] - s[t, i - 1] * Z[t, i - 1])) / (
                             nu[i] * (s[t, i + 1] * Z[t, i + 1] - s[t, i] * Z[t, i]))  # day
@@ -223,18 +130,17 @@ def model_sweby_migrationonly(Z0, P0, dz, dt, speed, args):
                 Z[t + 1, i] = Z[t, i] - dt / dz * (s[t, i] * Z[t, i] - s[t, i - 1] * Z[t, i - 1]) + dt / (2 * dz) * (
                         r[i] * nu[i] * (s[t, i + 1] * Z[t, i + 1] - s[t, i] * Z[t, i]) - r[i - 1] * nu[i - 1] * (
                         s[t, i] * Z[t, i] - s[t, i - 1] * Z[t, i - 1]))
-            # la montee
+
+            # the ascension
             else:
-                l = imax - i
-                # print('l=' + str(l))
+                l = imax - i  # inversion of the axis as the scheme involves positive advective velocity
                 if Z[t, l + 1] - Z[t, l] != 0:
                     nu[l] = 1 - dt / dz * ((np.abs(s[t, l + 1]) * Z[t, l + 1] - np.abs(s[t, l]) * Z[t, l]) / (
                             Z[t, l + 1] - Z[t, l]))
                 else:
                     nu[l] = 1 - dt / dz * (np.abs(s[t, l + 1]) - np.abs(s[t, l]))
-
-                if th <= 4 or th >= 20:
-                    r[l] = 0
+                if (nu[l] * (np.abs(s[t, l + 1]) * Z[t, l + 1] - np.abs(s[t, l]) * Z[t, l])) == 0:
+                    r[l] = 1
                 else:
                     r[l] = (nu[l - 1] * (np.abs(s[t, l]) * Z[t, l] - np.abs(s[t, l - 1]) * Z[t, l - 1])) / (
                             nu[l] * (np.abs(s[t, l + 1]) * Z[t, l + 1] - np.abs(s[t, l]) * Z[t, l]))
@@ -244,11 +150,11 @@ def model_sweby_migrationonly(Z0, P0, dz, dt, speed, args):
                         np.abs(s[t, l]) * Z[t, l] - np.abs(s[t, l + 1]) * Z[t, l + 1]) + dt / (2 * dz) * (
                                       r[l] * nu[l] * (
                                       np.abs(s[t, l - 1]) * Z[t, l - 1] - np.abs(s[t, l]) * Z[t, l]) - r[
-                                          l + 1] * nu[l + 1] * (
-                                              np.abs(s[t, l]) * Z[t, l] - np.abs(s[t, l + 1]) * Z[t, l + 1]))
+                                          l + 1] * nu[l + 1] * (np.abs(s[t, l]) * Z[t, l] - np.abs(s[t, l + 1]) * Z[
+                                  t, l + 1]))
 
-        Z[t + 1, 0] = Z[t + 1, 2]
-        Z[t + 1, imax] = Z[t + 1, imax - 2]
+        Z[t + 1, 0] = Z[t, 0]
+        Z[t + 1, imax] = 0
 
     return s, Z
 
@@ -525,6 +431,53 @@ def leapfrog(Z0, P0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, 
         Z[t + 1, zz - 1] = Z[t + 1, zz - 3]
 
     return s, P, Z
+
+
+def leapfrog_migrationonly(Z0, P0, dz, dt, speed, args):
+    tt, zz = np.shape(Z0)
+    Z = np.copy(Z0)
+    P = np.copy(P0)
+    s = np.zeros((tt, zz))
+    t = 0
+    for i in range(zz):
+        s[t, i] = speed(t * dt, i * dz, P[i], *args)
+        # CFL condition
+        if np.abs(s[t, i]) * dt / dz > 1:
+            print('CFL not satisfied : w*dt/dz=' + str(s[t, i]) + '*' + str(dt) + '/' + str(dz))
+            return None
+
+    Z[t + 1, 0] = Z[t, 0] + dt / dz * (
+            -s[t, 0] * (s[t, 0] > 0) * Z[t, 0] - 1 * (s[t, 1] < 0) * s[t, 1] * Z[t, 1])
+    Z[t + 1, -1] = Z[t, -1] + dt / dz * (
+            (s[t, -2] > 0) * s[t, -2] * Z[t, -2] - np.abs(s[t, -1]) * (s[t, -1] < 0) * Z[t, -1])
+
+    for i in range(1, zz - 1):
+        Z[t + 1, i] = Z[t, i] + dt / dz * (
+                (s[t, i - 1] > 0) * s[t, i - 1] * Z[t, i - 1] - np.abs(s[t, i]) * Z[t, i] - 1 * (
+                s[t, i + 1] < 0) * s[t, i + 1] * Z[t, i + 1])
+
+    for t in range(1, tt - 1):
+        if (t * dt) % 24 == 0:
+            print((t * dt)/24)
+        for i in range(zz):
+            s[t, i] = speed(t * dt, i * dz, P[i], *args)
+            # CFL condition
+            if np.abs(s[t, i]) * dt / dz > 1:
+                print('CFL not satisfied : w*dt/dz=' + str(s[t, i]) + '*' + str(dt) + '/' + str(dz))
+                return None
+
+        for i in range(1, zz - 1):
+#            if s[t, i] >= 0:
+            Z[t + 1, i] = Z[t - 1, i] - dt / dz * (s[t, i + 1] * Z[t, i + 1] - s[t, i - 1] * Z[t, i - 1])
+#            else:
+#                l = zz - 1 - i
+#                Z[t + 1, l] = Z[t - 1, l] - dt / dz * (np.abs(s[t, l + 1]) * Z[t, l + 1] - np.abs(s[t, l - 1]) * Z[t, l - 1])
+        Z[t + 1, 0] = Z[t, 0] + dt / dz * (
+                -s[t, 0] * (s[t, 0] > 0) * Z[t, 0] - 1 * (s[t, 1] < 0) * s[t, 1] * Z[t, 1])
+        Z[t + 1, -1] = Z[t, -1] + dt / dz * (
+                (s[t, -2] > 0) * s[t, -2] * Z[t, -2] - np.abs(s[t, -1]) * (s[t, -1] < 0) * Z[t, -1])
+
+    return s, Z
 
 
 def transport(Z0, P0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, mu, schema):
