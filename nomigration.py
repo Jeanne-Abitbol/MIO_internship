@@ -6,12 +6,12 @@ K = 3
 e = 0.8
 r_max = 0.5
 rho = 0.01
-K_I = 700
+K_I = 0.5
 alpha = 0.01
 beta = 1
 #m = 1e-2
 mu = 1e-3
-Em = 1
+Em = 0.1
 
 
 Tmax = 24 * 150

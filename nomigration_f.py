@@ -4,7 +4,8 @@ from model_functions import *
 def PZ_nomigration(Y, t, z, light, K_I, r_max, alpha, beta, K, e, mu):
     P = Y[0]
     Z = Y[1]
-    dP = R(t, z, r_max, K_I, light) * P * (1 - P / K) - alpha * P * Z / (1 + beta * P)
+    #dP = R(t, z, r_max, K_I, light) * P * (1 - P / K) - alpha * P * Z / (1 + beta * P)
+    dP = - alpha * P * Z / (1 + beta * P)
     dZ = Z * (e * alpha * P / (1 + beta * P) - mu)
     return dP, dZ
 
@@ -62,7 +63,8 @@ def RC_droop(Y, t, z, light, K_I, r_max, alpha, beta, K, e, mu, rho, Em):
     RP = Y[0]
     E = Y[1]
     C = Y[2]
-    dRP = R(t, z, r_max, K_I, light)*RP*(1-RP/K)-alpha*RP*C/(1+beta*RP)
+    #dRP = R(t, z, r_max, K_I, light)*RP*(1-RP/K)-alpha*RP*C/(1+beta*RP)
+    dRP = - alpha * RP * C / (1 + beta * RP)
     dE = e*alpha*RP*C/(1+beta*RP) - rho*(E-Em)
     dC = rho*C*(1-Em/E) - mu*C
     return dRP, dE, dC

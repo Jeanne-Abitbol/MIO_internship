@@ -43,6 +43,11 @@ def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-4):
             np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1 / np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2))))
 
 
+def dI0dt_richards(t, Is=1e-6, eps=1e-4):
+    return (0.5 * (1 - Is) * (
+            np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1 / np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2))))
+
+
 def I_richards(t, z, gamma=0.05):
     return I0_richards(t) * np.exp(- gamma * z)
 
@@ -152,9 +157,8 @@ def model_sweby_migrationonly(Z0, P0, dz, dt, speed, args):
                                       np.abs(s[t, l - 1]) * Z[t, l - 1] - np.abs(s[t, l]) * Z[t, l]) - r[
                                           l + 1] * nu[l + 1] * (np.abs(s[t, l]) * Z[t, l] - np.abs(s[t, l + 1]) * Z[
                                   t, l + 1]))
-
-        Z[t + 1, 0] = Z[t, 0]
-        Z[t + 1, imax] = 0
+        Z[t + 1, 0] = Z[t + 1, 2]
+        Z[t + 1, imax] = Z[t + 1, imax - 2]
 
     return s, Z
 

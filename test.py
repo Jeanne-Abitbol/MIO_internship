@@ -233,6 +233,12 @@ plt.plot(dIdt_richards(time, 500)/I_richards(time, 500), label='z=500')
 plt.plot(dIdt_richards(time, 600)/I_richards(time, 600), label='z=600')
 plt.legend()
 
+plt.figure()
+plt.title('Richards relative change of surface light')
+plt.plot(dI0dt_richards(time)/I0_richards(time), label='I0')
+plt.plot(dIdt_richards(time, 0)/I_richards(time, 0), label='I')
+plt.legend()
+
 plt.show()
 
 print(np.max(dIdt_richards(time, 600)/I_richards(time, 600)))

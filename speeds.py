@@ -1,10 +1,10 @@
 import matplotlib.pyplot as plt
 from speeds_f import *
 
-Tmax = 24
-Zmax = 1000
-dt = 0.0001
-dz = 0.5
+Tmax = 24*3
+Zmax = 300
+dt = 0.001
+dz = 10
 vd_max = 100
 vr_max = 80
 delta = 10
@@ -18,13 +18,14 @@ watercolumn = np.arange(0, Zmax, dz)
 
 Z0 = np.zeros((tt, zz))
 for i in range(zz):
-    Z0[0, i] = norm(i * dz, 30, 20)
+    Z0[0, i] = i * dz * np.exp(-0.05 * i * dz)
+
 
 P0 = np.zeros(zz)
 for i in range(zz):
     P0[i] = norm(i * dz, 25, 20)
 
-speed = v_richards_dIdt_noz
+speed = v_richards_dI0dt
 args = (vd_max, vr_max, delta)
 
 s, Z = model_sweby_migrationonly(Z0, P0, dz, dt, speed, args)
@@ -33,8 +34,8 @@ plt.figure()
 plt.title('speed')
 plt.plot(time, s[:, 0], label='z = 0')
 plt.plot(time, s[:, np.int(20 / dz)], label='z = 20')
-plt.plot(time, s[:, np.int(150 / dz)], label='z = 150')
-plt.plot(time, s[:, np.int(500 / dz)], label='z = 500')
+plt.plot(time, s[:, np.int(200 / dz)], label='z = 200')
+#plt.plot(time, s[:, np.int(500 / dz)], label='z = 500')
 plt.vlines([6, 18], -5, 5, linestyles='dashed')
 plt.legend()
 

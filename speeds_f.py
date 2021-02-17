@@ -58,19 +58,33 @@ def v_richards_relative_brut(t, z, P, vd_max, vr_max, vmax, delta, treshold):
     else:
         return 0
 
-def v_richards_dIdt_noz(t, z, P, vd_max, vr_max, delta, eps = 1e-3, Is=1e-6):
+
+def v_richards_dI0dt(t, z, P, vd_max, vr_max, delta, tdI=0.2, td=50, tl=1e-5, dl=9e-5, eps=1e-3, Is=1e-6):
     w = 0.5 * (1 - Is) * (
             np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1 / np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2)))
-    if dIdt_richards(t, z) > 0:
-        return vd_max*w
+    if np.abs(dI0dt_richards(t)) < tdI:
+        return 0
+    elif dI0dt_richards(t) > 0:
+        if tl <= I_richards(t, z) <= tl + dl:
+            return np.cos(np.pi/2*(1-(I_richards(t, z)-tl)/dl))*vd_max*w
+        elif I_richards(t, z) < tl:
+            return 0
+        else:
+            return vd_max*w
     else:
-        return vr_max*w/(1+delta*P)
+        if z == 0:
+            return 0
+        elif 0 < z < td:
+            return np.exp(1-td/z)*vr_max*w/(1+delta*P)
+        else:
+            return vr_max*w/(1+delta*P)
+
 
 def v_richardsII(t, z, P, vd_max, vr_max, delta, Zmax, gamma=0.05, b=10):  # nimp
     w = 1 / (gamma * I_richards(t, z)) * dIdt_richards(t, z)
-    if (w > vd_max):
+    if w > vd_max:
         h = vd_max
-    elif (w < -vr_max):
+    elif w < -vr_max:
         h = vr_max
     else:
         h = w

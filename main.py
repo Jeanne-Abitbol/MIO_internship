@@ -3,7 +3,6 @@ from speeds_f import *
 import datetime
 
 
-
 currentDT = datetime.datetime.now()
 start_time = 60 * currentDT.hour + currentDT.minute + currentDT.second / 60  # minutes
 
