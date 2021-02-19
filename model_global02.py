@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import datetime
 from pylab import meshgrid, cm, imshow, colorbar
-from model_global01_f import *
+from model_global02_f import *
 
 currentDT = datetime.datetime.now()
 start_time = 60 * currentDT.hour + currentDT.minute + currentDT.second / 60  # minutes
@@ -9,7 +9,7 @@ start_time = 60 * currentDT.hour + currentDT.minute + currentDT.second / 60  # m
 dz = 10  # depth step (m)
 dt = 0.001  # time step (h)
 Zmax = 300  # m
-Tmax = 24 * 7  # h
+Tmax = 24 * 3  # h
 K = 3
 alpha = 0.01
 beta = 1
@@ -26,6 +26,7 @@ tdI = 0.2
 td = 50
 tl = 1e-4
 dl = 9e-5
+d = 10
 
 tt = np.int(Tmax / dt)
 zz = np.int(Zmax / dz)
@@ -49,7 +50,7 @@ for i in range(zz):
 light = I_richards
 speed = v_richards_dI0dt
 args = (vd_max, vr_max, delta, tdI, td, tl, dl)
-s, R, E, C, D = model_AN_RC(R0, C0, E0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, mu, rho, Em)
+s, R, G, E, C, D = model_AN_RGECD(R0, C0, E0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, mu, rho, Em, d)
 
 plt.figure()
 plt.title('speed')
@@ -77,6 +78,16 @@ for i in indices:
     plt.pause(0.01)
 plt.show()
 
+plt.figure()
+for i in indices:
+    plt.clf()
+    plt.title('t = ' + str(i / 4 % 24))
+    plt.plot(watercolumn, G[np.int(i / (4 * dt))], label='G')
+    plt.plot(watercolumn, E[np.int(i / (4 * dt))], label='E')
+    plt.legend()
+    plt.pause(0.01)
+plt.show()
+
 Ctot = np.zeros(tt)
 Rtot = np.zeros(tt)
 Dtot = np.zeros(tt)
@@ -92,6 +103,18 @@ plt.plot(time, Rtot, label='R')
 plt.plot(time, Dtot, label='D')
 plt.legend()
 
+Gtot = np.zeros(tt)
+Etot = np.zeros(tt)
+for t in range(tt):
+    Gtot[t] = np.sum(G[t])
+    Etot[t] = np.sum(E[t])
+
+plt.figure()
+plt.title('total gut content and energy per consumer')
+plt.plot(time, Gtot, label='G')
+plt.plot(time, Etot, label='E')
+plt.legend()
+
 
 plt.figure()
 x = np.copy(indices)
@@ -100,9 +123,10 @@ X, Y = meshgrid(x, y)  # grid of point
 im = imshow(Ch, cmap=cm.RdBu, aspect='auto')  # drawing the function
 colorbar(im)  # adding the colobar on the right
 
-plt.show()
-
 currentDT = datetime.datetime.now()
 final_time = 60 * currentDT.hour + currentDT.minute + currentDT.second / 60  # minutes
 running_time = final_time - start_time
 print('The execution took '+str(running_time)+' minutes.')
+
+plt.show()
+
