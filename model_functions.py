@@ -33,12 +33,12 @@ def I(t, z, gamma=0.05):
     return I0(t) * np.exp(-gamma * z)
 
 
-def I0_richards(t, Is=1e-6, eps=1e-4):
+def I0_richards(t, Is=1e-6, eps=1e-3):
     return Is + (1 - Is) / 2 * (
             1 + np.sin(np.pi / 12 * (t - 6)) + np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2) - np.sqrt(eps + 1))
 
 
-def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-4):
+def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-3):
     return np.exp(-gamma * z) * (0.5 * (1 - Is) * (
             np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1 / np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2))))
 
@@ -50,6 +50,10 @@ def dI0dt_richards(t, Is=1e-6, eps=1e-4):
 
 def I_richards(t, z, gamma=0.05):
     return I0_richards(t) * np.exp(- gamma * z)
+
+
+def dI_richards_relative(t, z, dt):
+    return 1/dt * (I_richards(t + dt, z) / I_richards(t, z) - 1)
 
 
 def R(t, z, r_max, K_I, light):
@@ -557,3 +561,28 @@ def transport2(Z0, P0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e
         Z[t + 1, -1] = Z[t + 1, -2]
 
     return s, P, Z
+
+
+def transport2_migrationonly(C0, R0, dz, dt, speed, args):
+    tt, zz = np.shape(C0)
+    C = np.copy(C0)
+    R = np.copy(R0)
+    s = np.zeros((tt, zz))
+    for t in range(tt - 1):
+        # if t * dt == np.int(t * dt):
+        # print(t * dt)
+        for i in range(zz):
+            s[t, i] = speed(t * dt, i * dz, R[i], *args)
+            nu = s[t, i] * dt / dz
+            # CFL condition
+            if np.abs(nu) >= 1:
+                print('CFL not satisfied : w*dt/dz=' + str(s[t, i]) + '*' + str(dt) + '/' + str(dz))
+                return None
+
+        for i in range(1, zz - 1):
+            C[t + 1, i] = R[t, i] + dt / dz * ((s[t, i] > 0) * s[t, i] * (C[t, i] - C[t, i - 1]) - (s[t, i] < 0) *
+                                               s[t, i] * (C[t, i + 1] - C[t, i]))
+        C[t + 1, 0] = C[t + 1, 2]
+        C[t + 1, -1] = C[t + 1, -3]
+
+    return s, C

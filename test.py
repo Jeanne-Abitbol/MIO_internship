@@ -4,7 +4,7 @@ from speeds_f import *
 dz = 4  # depth step (m)
 dt = 0.001  # time step (h)
 Zmax = 600  # m
-Tmax = 72 # h
+Tmax = 48  # h
 K = 3
 alpha = 0.8
 beta = 1
@@ -36,7 +36,8 @@ P0 = np.zeros((tt, zz))
 for i in range(zz):
     P0[0, i] = norm(i * dz, 25, 20)
 
-"""V0 = np.zeros(tt)
+"""
+V0 = np.zeros(tt)
 V20 = np.zeros(tt)
 V100 = np.zeros(tt)
 for t in range(tt):
@@ -81,13 +82,12 @@ plt.plot(time, VVR20, label='z = 20')
 plt.plot(time, VVR200, label='z = 200')
 plt.legend()"""
 
-
 plt.figure()
 plt.title('Richards derivative')
-plt.plot(time, dIdt_richards(time, 0), label='z = 0')
-plt.plot(time, dIdt_richards(time, 20), label='z = 20')
-plt.plot(time, dIdt_richards(time, 200), label='z = 200')
-plt.plot(time, dIdt_richards(time, 500), label='z = 500')
+# plt.plot(time, dIdt_richards(time, 0), label='z = 0')
+# plt.plot(time, dIdt_richards(time, 20), label='z = 20')
+# plt.plot(time, dIdt_richards(time, 200), label='z = 200')
+plt.plot(time, dIdt_richards(time, 400), label='z = 400')
 plt.legend()
 
 vt0 = np.zeros(tt)
@@ -96,18 +96,19 @@ vt200 = np.zeros(tt)
 vt500 = np.zeros(tt)
 
 for t in range(tt):
-    vt0[t] = v_richards(t*dt, 0, P0[0, 0], delta)
-    vt20[t] = v_richards(t*dt, 20, P0[0, np.int(20/dz)], delta)
-    vt200[t] = v_richards(t*dt, 200, P0[0, np.int(200/dz)], delta)
-    vt500[t] = v_richards(t*dt, 500, P0[0, np.int(500/dz)], delta)
+    vt0[t] = v_richards(t * dt, 0, P0[0, 0], delta)
+    vt20[t] = v_richards(t * dt, 20, P0[0, np.int(20 / dz)], delta)
+    vt200[t] = v_richards(t * dt, 200, P0[0, np.int(200 / dz)], delta)
+    vt500[t] = v_richards(t * dt, 500, P0[0, np.int(500 / dz)], delta)
 
+night = np.arange(18, 30, dt)
 plt.figure()
-plt.title('Richards light')
-plt.plot(time, I_richards(time, 0), label='z = 0')
-plt.plot(time, I_richards(time, 20), label='z = 20')
-plt.plot(time, I_richards(time, 200), label='z = 200')
-plt.plot(time, I_richards(time, 500), label='z = 500')
-plt.legend()
+plt.title('Richards light ; z = 50')
+plt.plot(night, I_richards(night, 50))
+plt.figure()
+plt.title('Richards light ; z = 350')
+plt.plot(time, I_richards(time, 350))
+
 
 plt.figure()
 plt.title('Richards speed')
@@ -122,9 +123,9 @@ vrt20 = np.zeros(tt)
 vrt200 = np.zeros(tt)
 
 for t in range(tt):
-    vrt0[t] = v_richards_relative(t*dt, 0, P0[0, 0], vd_max, vr_max, delta, dt)
-    vrt20[t] = v_richards_relative(t*dt, 20, P0[0, np.int(20/dz)], vd_max, vr_max, delta, dt)
-    vrt200[t] = v_richards_relative(t*dt, 200, P0[0, np.int(200/dz)], vd_max, vr_max, delta, dt)
+    vrt0[t] = v_richards_relative(t * dt, 0, P0[0, 0], vd_max, vr_max, delta, dt)
+    vrt20[t] = v_richards_relative(t * dt, 20, P0[0, np.int(20 / dz)], vd_max, vr_max, delta, dt)
+    vrt200[t] = v_richards_relative(t * dt, 200, P0[0, np.int(200 / dz)], vd_max, vr_max, delta, dt)
 
 plt.figure()
 plt.title('Richards relative speed')
@@ -138,9 +139,9 @@ vrt20b = np.zeros(tt)
 vrt200b = np.zeros(tt)
 
 for t in range(tt):
-    vrt0b[t] = v_richards_relative_brut(t*dt, 0, P0[0, 0], vd_max, vr_max, vmax, delta, treshold)
-    vrt20b[t] = v_richards_relative_brut(t*dt, 20, P0[0, np.int(20/dz)], vd_max, vr_max, vmax, delta, treshold)
-    vrt200b[t] = v_richards_relative_brut(t*dt, 200, P0[0, np.int(200/dz)], vd_max, vr_max, vmax, delta, treshold)
+    vrt0b[t] = v_richards_relative_brut(t * dt, 0, P0[0, 0], vd_max, vr_max, vmax, delta, treshold)
+    vrt20b[t] = v_richards_relative_brut(t * dt, 20, P0[0, np.int(20 / dz)], vd_max, vr_max, vmax, delta, treshold)
+    vrt200b[t] = v_richards_relative_brut(t * dt, 200, P0[0, np.int(200 / dz)], vd_max, vr_max, vmax, delta, treshold)
 
 plt.figure()
 plt.title('Richards relative speed brut')
@@ -179,17 +180,18 @@ R25 = np.zeros(tt)
 R250 = np.zeros(tt)
 R500 = np.zeros(tt)
 for t in range(tt):
-    R0[t] = R(t*dt, 0, r_max, K_I, I_richards)
-    R25[t] = R(t*dt, 25, r_max, K_I, I_richards)
+    R0[t] = R(t * dt, 0, r_max, K_I, I_richards)
+    R25[t] = R(t * dt, 25, r_max, K_I, I_richards)
 #    R250[t] = R(t*dt, 250, r_max, K_I, I_richards)
 #    R500[t] = R(t*dt, 500, r_max, K_I, I_richards)
 plt.plot(time, R0, label='z=0')
 plt.plot(time, R25, label='z=25')
-#plt.plot(time, R250, label='z=250')
-#plt.plot(time, R500, label='z=500')
+# plt.plot(time, R250, label='z=250')
+# plt.plot(time, R500, label='z=500')
 plt.legend()
 
-"""VRII0 = np.zeros((tt))
+"""
+VRII0 = np.zeros((tt))
 VRII50 = np.zeros((tt))
 #VRII250 = np.zeros((tt))
 
@@ -208,44 +210,68 @@ plt.legend()"""
 from pylab import meshgrid, cm, imshow, colorbar
 
 plt.figure()
-x = np.arange(0, 24.1, 0.1) # one day
+x = np.arange(0, 24.1, 0.1)  # one day
 y = np.arange(0, Zmax, dz)
 X, Y = meshgrid(y, x)  # grid of point
 
-Z_light=np.zeros((len(y), len(x)))
+Z_light = np.zeros((len(y), len(x)))
 for i in range(len(x)):
     t = x[i]
-    for j in range ((len(y))):
+    for j in range((len(y))):
         z = y[j]
         Z_light[j, i] = I_richards(t, z)
 
 im = imshow(Z_light, cmap=cm.RdBu, aspect='auto')  # drawing the function
 colorbar(im)  # adding the colobar on the right
 
-
 plt.figure()
 plt.title('Richards relative change of light')
-plt.plot(dIdt_richards(time, 0)/I_richards(time, 0), label='z=0')
-plt.plot(dIdt_richards(time, 20)/I_richards(time, 20), label='z=20')
-plt.plot(dIdt_richards(time, 100)/I_richards(time, 100), label='z=100')
-plt.plot(dIdt_richards(time, 300)/I_richards(time, 300), label='z=300')
-plt.plot(dIdt_richards(time, 500)/I_richards(time, 500), label='z=500')
-plt.plot(dIdt_richards(time, 600)/I_richards(time, 600), label='z=600')
+plt.plot(time, dIdt_richards(time, 0) / I_richards(time, 0), label='z=0')
+plt.plot(time, dIdt_richards(time, 20) / I_richards(time, 20), label='z=20')
+plt.plot(time, dIdt_richards(time, 100) / I_richards(time, 100), label='z=100')
+plt.plot(time, dIdt_richards(time, 300) / I_richards(time, 300), label='z=300')
+plt.plot(time, dIdt_richards(time, 500) / I_richards(time, 500), label='z=500')
+plt.plot(time, dIdt_richards(time, 600) / I_richards(time, 600), label='z=600')
 plt.legend()
 
 plt.figure()
 plt.title('Richards relative change of surface light')
-plt.plot(dI0dt_richards(time)/I0_richards(time), label='I0')
-plt.plot(dIdt_richards(time, 0)/I_richards(time, 0), label='I')
+plt.plot(time, dI0dt_richards(time) / I0_richards(time), label='I0')
+plt.plot(time, dIdt_richards(time, 0) / I_richards(time, 0), label='I')
 plt.legend()
+
+plt.figure()
+plt.title('Richards relative change of light approximation')
+plt.plot(time, dI_richards_relative(time, 0, dt), label='z=0')
+plt.plot(time, dI_richards_relative(time, 350, dt), label='z = 350')
+plt.legend()
+
+plt.figure()
+plt.title('z = 20')
+plt.subplot(211)
+plt.plot(time, dIdt_richards(time, 20) / I_richards(time, 20), label='dI/dt * 10/I')
+plt.subplot(212)
+plt.plot(time, dIdt_richards(time, 20), label='dI/dt')
+plt.plot(time, I_richards(time, 20), label='I')
+plt.legend()
+
+plt.figure()
+plt.title('z = 350')
+plt.subplot(211)
+plt.plot(time, dIdt_richards(time, 350) / I_richards(time, 350), label='dI/dt * 1/I')
+plt.subplot(212)
+plt.plot(time, dIdt_richards(time, 350), label='dI/dt')
+plt.plot(time, I_richards(time, 350), label='I')
+plt.legend()
+
 
 plt.show()
 
-print(np.max(dIdt_richards(time, 600)/I_richards(time, 600)))
-print(np.max(dIdt_richards(time, 0)/I_richards(time, 0)))
+print(np.max(dIdt_richards(time, 600) / I_richards(time, 600)))
+print(np.max(dIdt_richards(time, 0) / I_richards(time, 0)))
 
-# how to do a color map
-"""from numpy import exp, arange
+"""# how to do a color map
+from numpy import exp, arange
 from pylab import meshgrid, cm, imshow, contour, clabel, colorbar, axis, title, show
 
 
@@ -270,9 +296,8 @@ show()
 
 plt.show()"""
 
-
-
-"""def f(a, b, c):
+"""
+def f(a, b, c):
     return a + b + c
 
 
@@ -285,4 +310,3 @@ def h(func, args):
 
 
 print(h(f, (2, 3)))"""
-

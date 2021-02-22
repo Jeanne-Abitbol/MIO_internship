@@ -1,17 +1,17 @@
 import numpy as np
 
 
-def I0_richards(t, Is=1e-6, eps=1e-4):
+def I0_richards(t, Is=1e-6, eps=1e-3):
     return Is + (1 - Is) / 2 * (
             1 + np.sin(np.pi / 12 * (t - 6)) + np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2) - np.sqrt(eps + 1))
 
 
-def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-4):
+def dIdt_richards(t, z, gamma=0.05, Is=1e-6, eps=1e-3):
     return np.exp(-gamma * z) * (0.5 * (1 - Is) * (
             np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1 / np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2))))
 
 
-def dI0dt_richards(t, Is=1e-6, eps=1e-4):
+def dI0dt_richards(t, Is=1e-6, eps=1e-3):
     return 0.5 * (1 - Is) * (
             np.pi / 12 * np.cos(np.pi / 12 * (t - 6)) * (1 + 1 / np.sqrt(eps + np.sin(np.pi / 12 * (t - 6)) ** 2)))
 
@@ -24,48 +24,26 @@ def r(t, z, r_max, K_I, light):
     return r_max * light(t, z) / (K_I + light(t, z))
 
 
-def v_richards_dI0dt(t, z, R, vd_max, vr_max, delta, tdI, td, tl, dl):
+def v_richards_seuil(t, z, R, dt, tdI, v):
     """
     Migration speed
     :param t: time (h)
     :param z: depth (m)
-    :param P: phytoplankton concentration
-    :param vd_max: coefficient for descent speed
-    :param vr_max: coefficient for ascent speed
-    :param delta: handling time for feeding-dependent speed (during the ascent)
-    :param tdI: treshold for the rate of surface light change under which the speed is null
-    :param td: treshold in depth for lowering the ascent speed
-    :param tl: treshold in absolute light for lowering the descent speed
-    :param dl: such that the descent speed is null under tl - dl (absolute light)
-    :return: numerical value for the migration time at a given time and depth, can be positive (descent) or negative (ascent)
+    :param R: resource concentration
+    :param tdI: treshold for the relative rate of light change under which the speed is null
+    :param dt: time step
+    :param v: constant speed (m/h)
+    :return: migration speed at a given time and depth, can be positive (descent) or negative (ascent)
     """
-    w = dI0dt_richards(t)
-    if np.abs(w) < tdI:
+    dI_r = 1/dt * (I_richards(t+dt, z)/I_richards(t, z)-1)
+    if np.abs(dI_r) < tdI:
         return 0
-    elif w > 0:
-        if tl - dl <= I_richards(t, z) <= tl:
-            return np.cos(np.pi / 2 * (1 - (I_richards(t, z) - (tl - dl)) / dl)) * vd_max * w
-        elif I_richards(t, z) < tl - dl:
-            return 0
-        else:
-            return vd_max * w
     else:
-        if z == 0:
-            return 0
-        elif 0 < z < td:
-            return np.exp(1 - td / z) * vr_max * w / (1 + delta * P)
+        if dI_r > 0:
+            return v
         else:
-            return vr_max * w / (1 + delta * R)
+            return -v
 
-
-def v(t, z, R):
-    th = t % 24
-    if 4.5 <= th <= 6.5:
-        return 72
-    elif 16.5 <= th <= 18.5:
-        return -72
-    else:
-        return 0
 
 
 def model_AN_RGCD(R0, C0, dz, dt, light, speed, args, K_I, r_max, alpha, beta, K, e, mu, d):

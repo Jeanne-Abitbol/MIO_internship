@@ -11,13 +11,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="187f2fef-0580-4c05-9314-aba63402c3a3" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/model_G01.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/model_G01_f.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/model_global02.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/model_global02_f.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/migrationonly.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/model_G02.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/model_G02_f.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model_global01.py" beforeDir="false" afterPath="$PROJECT_DIR$/model_global01.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model_global01_f.py" beforeDir="false" afterPath="$PROJECT_DIR$/model_global01_f.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model_G01.py" beforeDir="false" afterPath="$PROJECT_DIR$/model_G01.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model_G01_f.py" beforeDir="false" afterPath="$PROJECT_DIR$/model_G01_f.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model_functions.py" beforeDir="false" afterPath="$PROJECT_DIR$/model_functions.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,7 +44,13 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
   </component>
   <component name="SvnConfiguration">
     <configuration />
